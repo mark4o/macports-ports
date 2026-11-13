@@ -1,0 +1,25 @@
+From 948c519c0868dba873f09b22d4142cf24b20fa59 Mon Sep 17 00:00:00 2001
+From: Mark Harris <mark.hsj@gmail.com>
+Date: Mon, 9 Nov 2026 21:40:33 -0800
+Subject: [PATCH] Fix syntax error on 32-bit Darwin
+
+---
+ coregrind/m_syswrap/priv_types_n_macros.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/coregrind/m_syswrap/priv_types_n_macros.h b/coregrind/m_syswrap/priv_types_n_macros.h
+index 16315163b..c6664f343 100644
+--- coregrind/m_syswrap/priv_types_n_macros.h
++++ coregrind/m_syswrap/priv_types_n_macros.h
+@@ -609,7 +609,7 @@ static inline UWord getERR ( SyscallStatus* st ) {
+     } else { \
+       Addr here = layout->s_sysno + VG_(get_SP)(tid); \
+       VG_(tdict).track_pre_mem_read(Vg_CoreSysCallArgInMem, tid, "(syscallno)",  \
+-                                    here, sizeof(RegWord);                       \
++                                    here, sizeof(RegWord));                      \
+     } \
+   } while (0)
+ #else
+-- 
+2.56.0
+

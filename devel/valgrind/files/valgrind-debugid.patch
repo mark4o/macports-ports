@@ -1,0 +1,56 @@
+From 38936039656f9018046226c36ae1135fb44e3349 Mon Sep 17 00:00:00 2001
+From: Mark Harris <mark.hsj@gmail.com>
+Date: Sun, 8 Nov 2026 22:15:32 -0800
+Subject: [PATCH] Fix kdebug_debugid build failure on OS X <10.11
+
+m_syswrap/syswrap-darwin.c:2810:16: error: call to undeclared function
+  'kdebug_debugid'; ISO C99 and later do not support implicit function
+  declarations [-Wimplicit-function-declaration]
+
+The function kdebug_debugid() was only being defined for OS X 10.11 and
+later, because KDBG_EXTRACT_CLASS and KDBG_EVENTID_MASK are only defined
+in sys/kdebug.h on OS X 10.11 and later, but kdebug_debugid() was being
+called for all OS X versions from PRE(kdebug_trace).  Since the function
+is applicable to earlier versions and can easily avoid using these newer
+macros, it now avoids these macros and is always defined.
+---
+ coregrind/m_syswrap/syswrap-darwin.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/coregrind/m_syswrap/syswrap-darwin.c b/coregrind/m_syswrap/syswrap-darwin.c
+index 2c932b63a..51228472b 100644
+--- coregrind/m_syswrap/syswrap-darwin.c
++++ coregrind/m_syswrap/syswrap-darwin.c
+@@ -735,9 +735,6 @@ void VG_(show_open_ports)(void)
+    VG_(message)(Vg_UserMsg, "\n");
+ }
+ 
+-/* helpers used by PRE(kdebug_trace_string) added in OSX 10.11 */
+-#if DARWIN_VERS >= DARWIN_10_11
+-
+ /* ---------------------------------------------------------------------
+    kdebug helpers
+    ------------------------------------------------------------------ */
+@@ -827,8 +824,8 @@ static const HChar *kdebug_debugid(ULong did)
+ 
+   static HChar buf[64];
+ 
+-  Int class = KDBG_EXTRACT_CLASS(did);
+-  ULong event_id = did & KDBG_EVENTID_MASK;
++  Int class = (Int)((did >> 24) & 0xff);  // KDBG_EXTRACT_CLASS(did) (10.11+)
++  ULong event_id = did & 0xfffffffc;      // did & KDBG_EVENTID_MASK (10.11+)
+   HChar dir = '\0';
+   const HChar* found_class = NULL;
+ 
+@@ -920,8 +917,6 @@ static const HChar *kdebug_debugid(ULong did)
+   return buf;
+ }
+ 
+-#endif
+-
+ 
+ /* ---------------------------------------------------------------------
+    sync_mappings
+-- 
+2.56.0
+
